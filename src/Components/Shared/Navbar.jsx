@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { Link, NavLink } from "react-router";
 import { AuthContext } from "../../Context/AuthContext";
 import Swal from "sweetalert2";
@@ -6,20 +6,12 @@ import Swal from "sweetalert2";
 export default function Navbar() {
   const { isDarkMode, setIsDarkMode, user, logout } = useContext(AuthContext);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("isDarkMode");
-    if (savedTheme !== null) {
-      setIsDarkMode(JSON.parse(savedTheme));
-    }
-  }, [setIsDarkMode]);
-
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
     localStorage.setItem("isDarkMode", JSON.stringify(newTheme));
   };
 
-  // 🔥 LOGOUT FUNCTION WITH SWEETALERT2
   const handleLogout = () => {
     Swal.fire({
       title: "Logout?",
@@ -31,183 +23,170 @@ export default function Navbar() {
       confirmButtonText: "Yes, logout",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        try {
-          await logout();
-
-          Swal.fire({
-            icon: "success",
-            title: "Logged out",
-            text: "You have been logged out successfully.",
-            timer: 2000,
-            showConfirmButton: false,
-          });
-        } catch (err) {
-          Swal.fire({
-            icon: "error",
-            title: "Error logging out",
-            text: err.message,
-          });
-        }
+        await logout();
+        Swal.fire({ icon: "success", title: "Logged out", timer: 1500, showConfirmButton: false });
       }
     });
   };
 
-  const baseLinks = (
+  const navLinkClass = ({ isActive }) =>
+    [
+      "relative px-1 py-0.5 font-medium text-sm transition-colors duration-200",
+      "after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-primary",
+      "after:transition-all after:duration-300",
+      isActive
+        ? "text-primary after:w-full"
+        : "text-base-content/70 hover:text-primary after:w-0 hover:after:w-full",
+    ].join(" ");
+
+  const dropLinkClass = ({ isActive }) =>
+    isActive
+      ? "bg-primary/10 text-primary font-semibold rounded-lg"
+      : "hover:bg-base-200 rounded-lg transition-colors duration-150";
+
+  // ── Navbar links — NO "Add Book" or "My Books" here ─────────────────────────
+  const navbarLinks = (
     <>
-      <li>
-        <NavLink to="/">Home</NavLink>
-      </li>
-      <li>
-        <NavLink to="/books">All Books</NavLink>
-      </li>
-      <li>
-        <NavLink to="/become-librarian">Become a Librarian</NavLink>
-      </li>
+      <li><NavLink to="/"      className={navLinkClass}>Home</NavLink></li>
+      <li><NavLink to="/books" className={navLinkClass}>All Books</NavLink></li>
+
+      {user?.role === "librarian" && (
+        <li><NavLink to="/librarian-dashboard" className={navLinkClass}>My Dashboard</NavLink></li>
+      )}
+
+      {user?.role === "admin" && (
+        <>
+          <li><NavLink to="/librarian-dashboard" className={navLinkClass}>Librarian View</NavLink></li>
+          <li><NavLink to="/admin-dashboard"     className={navLinkClass}>Admin</NavLink></li>
+        </>
+      )}
+
+      {(!user || user?.role === "user") && (
+        <li><NavLink to="/become-librarian" className={navLinkClass}>Become a Librarian</NavLink></li>
+      )}
     </>
   );
 
-  // Admin-only link
-  const adminLink = user?.role === "admin" && (
-    <li>
-      <NavLink to="/admin-dashboard">Admin Dashboard</NavLink>
-    </li>
-  );
-
-  // Combine links
-  const links = (
+  // ── Dropdown — Add Book stays here for librarian/admin ──────────────────────
+  const dropdownLinks = (
     <>
-      {baseLinks}
-      {adminLink}
+      <li><NavLink to="/profile"   className={dropLinkClass}>👤 Profile</NavLink></li>
+      <li><NavLink to="/my-orders" className={dropLinkClass}>📦 My Orders</NavLink></li>
+      <li><NavLink to="/invoices"  className={dropLinkClass}>🧾 Invoices</NavLink></li>
+
+      {user?.role === "user" && (
+        <li><NavLink to="/become-librarian" className={dropLinkClass}>🎓 Become a Librarian</NavLink></li>
+      )}
+
+      {/* ✅ Add Book and dashboard only in dropdown for librarian/admin — NOT in navbar */}
+      {user?.role === "librarian" && (
+        <>
+          <li className="px-3 pt-3 pb-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-base-content/40">Librarian</span>
+          </li>
+          <li><NavLink to="/add-book"            className={dropLinkClass}>➕ Add Book</NavLink></li>
+          <li><NavLink to="/librarian-dashboard" className={dropLinkClass}>🗂 My Dashboard</NavLink></li>
+        </>
+      )}
+
+      {user?.role === "admin" && (
+        <>
+          <li className="px-3 pt-3 pb-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-base-content/40">Admin</span>
+          </li>
+          <li><NavLink to="/add-book"            className={dropLinkClass}>➕ Add Book</NavLink></li>
+          <li><NavLink to="/librarian-dashboard" className={dropLinkClass}>🗂 Librarian View</NavLink></li>
+          <li><NavLink to="/admin-dashboard"     className={dropLinkClass}>⚙️ Admin Dashboard</NavLink></li>
+        </>
+      )}
+
+      <li className="mt-2 pt-2 border-t border-base-200">
+        <button
+          onClick={handleLogout}
+          className="w-full text-left text-error font-medium px-3 py-2 rounded-lg hover:bg-error/10 transition-colors duration-150"
+        >
+          🚪 Logout
+        </button>
+      </li>
     </>
   );
 
   return (
-    <div className="navbar bg-base-100 border-b-2 border-primary">
+    <div className="navbar bg-base-100 border-b-2 border-primary px-4 sticky top-0 z-50 shadow-sm">
+
+      {/* Brand + Mobile Hamburger */}
       <div className="navbar-start">
         <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h8m-8 6h16"
-              />
+          <div tabIndex={0} role="button" className="btn btn-ghost btn-sm lg:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
             </svg>
           </div>
-          <ul
-            tabIndex="-1"
-            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-20 mt-3 w-52 p-2 shadow"
-          >
-            {links}
+          <ul tabIndex="-1" className="menu menu-sm dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow border border-base-200">
+            {navbarLinks}
           </ul>
         </div>
-        <a className="btn btn-ghost text-xl">BookCourier</a>
+        <Link to="/" className="btn btn-ghost text-xl font-extrabold text-primary tracking-tight ml-1">
+          BookCourier
+        </Link>
       </div>
 
+      {/* Desktop Nav */}
       <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1">{links}</ul>
+        <ul className="menu menu-horizontal gap-1 px-1">
+          {navbarLinks}
+        </ul>
       </div>
 
-      <div className="navbar-end gap-3.5">
+      {/* Right side */}
+      <div className="navbar-end gap-3">
+        {/* Dark mode toggle */}
         <label className="toggle text-base-content">
-          <input
-            type="checkbox"
-            checked={isDarkMode}
-            onChange={toggleTheme}
-            className="theme-controller"
-            value={isDarkMode ? "dark" : "bumblebee"}
-          />
-
-          {/* sun */}
-          <svg
-            aria-label="sun"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-          >
-            <g
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              strokeWidth="2"
-              fill="none"
-              stroke="currentColor"
-            >
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M12 2v2"></path>
-              <path d="M12 20v2"></path>
-              <path d="m4.93 4.93 1.41 1.41"></path>
-              <path d="m17.66 17.66 1.41 1.41"></path>
-              <path d="M2 12h2"></path>
-              <path d="M20 12h2"></path>
-              <path d="m6.34 17.66-1.41 1.41"></path>
-              <path d="m19.07 4.93-1.41 1.41"></path>
+          <input type="checkbox" checked={isDarkMode} onChange={toggleTheme}
+            className="theme-controller" value={isDarkMode ? "dark" : "bumblebee"} />
+          <svg aria-label="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <g strokeLinejoin="round" strokeLinecap="round" strokeWidth="2" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2"/><path d="M12 20v2"/>
+              <path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>
+              <path d="M2 12h2"/><path d="M20 12h2"/>
+              <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
             </g>
           </svg>
-
-          {/* moon */}
-          <svg
-            aria-label="moon"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-          >
-            <g
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              strokeWidth="2"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          <svg aria-label="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <g strokeLinejoin="round" strokeLinecap="round" strokeWidth="2" fill="none" stroke="currentColor">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
             </g>
           </svg>
         </label>
 
+        {/* Avatar dropdown OR Login */}
         {user ? (
           <div className="dropdown dropdown-end">
-            <div
-              tabIndex={0}
-              role="button"
-              className="btn btn-ghost btn-circle avatar"
-            >
+            <div tabIndex={0} role="button"
+              className="btn btn-ghost btn-circle avatar ring-2 ring-primary ring-offset-2 ring-offset-base-100 hover:ring-offset-0 transition-all duration-200">
               <div className="w-10 rounded-full">
-                <img
-                  alt="avatar"
-                  src={user.photoURL || 'https://static.vecteezy.com/system/resources/previews/036/280/651/original/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-illustration-vector.jpg'}
-                />
+                <img alt="avatar" src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || "U")}&background=random&size=40`} />
               </div>
             </div>
-            <ul
-              tabIndex="-1"
-              className="menu menu-sm dropdown-content bg-base-100 rounded-box z-20 mt-3 w-52 p-2 border border-secondary shadow"
-            >
-              <li>
-                <Link to="/profile">Profile</Link>
-              </li>
-              <li>
-                <Link to="/my-orders">Orders</Link>
-              </li>
-              <li>
-                <Link to="/invoices">Invoice</Link>
-              </li>
 
-              {/* 🔥 LOGOUT BUTTON */}
-              <li>
-                <button onClick={handleLogout} className="w-full text-left">
-                  Logout
-                </button>
+            <ul tabIndex="-1" className="menu menu-sm dropdown-content bg-base-100 rounded-2xl z-50 mt-3 w-56 p-2 border border-base-200 shadow-xl">
+              {/* User info header */}
+              <li className="px-3 py-3 border-b border-base-200 mb-2 pointer-events-none">
+                <div>
+                  <p className="font-bold text-sm truncate">{user.displayName || "User"}</p>
+                  <p className="text-xs text-base-content/50 truncate">{user.email}</p>
+                  <span className="badge badge-xs badge-primary capitalize mt-1.5">{user.role}</span>
+                </div>
               </li>
+              {dropdownLinks}
             </ul>
           </div>
         ) : (
-          <Link to={"/login"} className="btn">
-            Login
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/login"  className="btn btn-ghost btn-sm rounded-full px-4">Login</Link>
+            <Link to="/signup" className="btn btn-primary btn-sm rounded-full px-5">Sign Up</Link>
+          </div>
         )}
       </div>
     </div>

@@ -1,86 +1,239 @@
-import { useState, useContext } from "react";
-import axios from "axios";
+import { useState, useContext, useEffect } from "react";
+import { Link, useNavigate } from "react-router";
+import api from "../../utilitys/api";
 import { AuthContext } from "../../Context/AuthContext";
+import Swal from "sweetalert2";
 
 const BecomeLibrarian = () => {
   const { user } = useContext(AuthContext);
-  const [status, setStatus] = useState(null);
+  const navigate  = useNavigate();
 
-  const handleRequest = async () => {
+  const [reason, setReason]               = useState("");
+  const [loading, setLoading]             = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [requestStatus, setRequestStatus] = useState(null); // null | "pending" | "approved" | "rejected"
+
+  useEffect(() => {
+    if (!user) {
+      Swal.fire("Login Required", "You need to login first", "warning").then(() => navigate("/login"));
+      return;
+    }
+    // If already a librarian or admin, no need to apply
+    if (user.role === "librarian" || user.role === "admin") {
+      navigate("/librarian-dashboard");
+      return;
+    }
+    // Check existing request
+    checkExistingRequest();
+  }, [user]);
+
+  const checkExistingRequest = async () => {
     try {
-      const response = await axios.post("/api/users/become-librarian", {
-        userId: user.uid,
-      });
-
-      if (response.data.success) {
-        setStatus("✅ Your request to become a librarian has been submitted!");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Something went wrong. Try again later.");
+      const res = await api.get(`/api/my-librarian-request?uid=${user.uid}`);
+      setRequestStatus(res.data?.status || null);
+    } catch {
+      setRequestStatus(null);
+    } finally {
+      setCheckingStatus(false);
     }
   };
 
+  const handleRequest = async () => {
+    if (reason.trim().length < 10) {
+      return Swal.fire("Too short", "Please explain your reason (min 10 characters).", "warning");
+    }
+    setLoading(true);
+    try {
+      await api.post("/api/become-librarian", {
+        userId: user.uid,
+        reason: reason.trim(),
+        userInfo: {
+          displayName: user.displayName || user.email,
+          email:       user.email,
+          photoURL:    user.photoURL || "",
+        },
+      });
+      setRequestStatus("pending");
+      Swal.fire({ icon: "success", title: "Request Submitted!", text: "We'll notify you once reviewed.", timer: 2500, showConfirmButton: false });
+    } catch (err) {
+      const msg = err.response?.data?.error || "Something went wrong. Try again.";
+      if (msg.toLowerCase().includes("pending")) setRequestStatus("pending");
+      Swal.fire("Error", msg, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const charCount = reason.trim().length;
+
+  if (checkingStatus) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-200">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-10">
-      {/* Header Section */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Become a Librarian</h1>
-        <p className="text-lg text-gray-700">
-          Join BookCourier as a librarian and help readers access books from the comfort of their homes!
-        </p>
-      </div>
+    <div className="min-h-screen bg-base-200">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-10">
 
-      {/* Why Become a Librarian */}
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold">Why Become a Librarian?</h2>
-          <ul className="list-disc list-inside text-gray-700">
-            <li>Share your love of books with your community.</li>
-            <li>Manage your own library inventory online.</li>
-            <li>Earn money from book deliveries and orders.</li>
-            <li>Connect with students, researchers, and avid readers.</li>
-            <li>Be part of a growing digital library network.</li>
-          </ul>
+        {/* Hero */}
+        <div className="card bg-base-100 shadow border border-base-300 rounded-3xl overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="p-8 sm:p-10 space-y-5 flex flex-col justify-center">
+              <div>
+                <p className="text-primary font-semibold tracking-widest uppercase text-xs sm:text-sm mb-2">Opportunity</p>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+                  Become a<br />Librarian
+                </h1>
+              </div>
+              <p className="text-base-content/60 leading-relaxed">
+                Join BookCourier as a librarian. Add books, manage orders, and help readers across the community get access to great reads — from the comfort of their home.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {["Add & manage books", "Librarian dashboard", "Manage orders", "Grow your library"].map(tag => (
+                  <span key={tag} className="badge badge-primary badge-outline font-medium">{tag}</span>
+                ))}
+              </div>
+            </div>
+            <div className="hidden md:block overflow-hidden max-h-72">
+              <img
+                src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80"
+                alt="Library"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <img
-            src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80"
-            alt="Librarian"
-            className="rounded-xl shadow-lg"
-          />
+
+        {/* How it works */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { step: "1", icon: "✍️", title: "Apply",    desc: "Fill the form below with your reason." },
+            { step: "2", icon: "👀", title: "Review",   desc: "Admin reviews your application." },
+            { step: "3", icon: "✅", title: "Approved", desc: "Get notified and your role is updated." },
+            { step: "4", icon: "🚀", title: "Go live",  desc: "Start adding books and managing orders." },
+          ].map(s => (
+            <div key={s.step} className="card bg-base-100 shadow border border-base-300 rounded-2xl">
+              <div className="card-body p-5 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-black flex items-center justify-center flex-shrink-0">{s.step}</div>
+                  <span className="text-2xl">{s.icon}</span>
+                </div>
+                <h3 className="font-black">{s.title}</h3>
+                <p className="text-sm text-base-content/60">{s.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
 
-      {/* Steps to Become a Librarian */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">How it Works</h2>
-        <ol className="list-decimal list-inside text-gray-700 space-y-2">
-          <li>Click the "Submit Request" button below.</li>
-          <li>Our team will review your request and approve it.</li>
-          <li>Once approved, you can start adding books and managing orders.</li>
-          <li>Enjoy full access to your librarian dashboard!</li>
-        </ol>
-      </div>
+        {/* Status states */}
+        {requestStatus === "pending" && (
+          <div className="card bg-warning/10 border border-warning/30 shadow rounded-2xl">
+            <div className="card-body p-6 flex-row items-center gap-5">
+              <span className="text-5xl">⏳</span>
+              <div>
+                <h2 className="font-black text-lg">Request Under Review</h2>
+                <p className="text-base-content/60 text-sm mt-1">Your application is pending admin approval. We'll update your role automatically once approved — no action needed.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Call-to-Action */}
-      <div className="text-center">
-        <button
-          onClick={handleRequest}
-          className="px-8 py-3 btn-primary btn text-lg font-semibold animate-bounce"
-        >
-          Submit Request
-        </button>
-        {status && <p className="mt-4 text-green-600 font-medium">{status}</p>}
-      </div>
+        {requestStatus === "rejected" && (
+          <div className="card bg-error/10 border border-error/30 shadow rounded-2xl">
+            <div className="card-body p-6 flex-row items-center gap-5">
+              <span className="text-5xl">❌</span>
+              <div>
+                <h2 className="font-black text-lg">Previous Request Rejected</h2>
+                <p className="text-base-content/60 text-sm mt-1 mb-3">Your last request was not approved. You're welcome to submit a new one with more detail.</p>
+                <button onClick={() => setRequestStatus(null)} className="btn btn-error btn-outline btn-sm rounded-full">
+                  Submit New Request
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Extra Section: Community & Benefits */}
-      <div className="bg-blue-50 p-6 rounded-xl shadow-inner space-y-4">
-        <h2 className="text-2xl font-semibold text-center">Benefits of Joining Our Network</h2>
-        <p className="text-center text-gray-700">
-          As a librarian on BookCourier, you’ll gain exposure to a wide range of readers, get insights into reading trends, 
-          and have a chance to grow your personal library business. Your work will help readers get books faster and more conveniently!
-        </p>
+        {/* Application form */}
+        {(!requestStatus || requestStatus === "rejected") && (
+          <div className="card bg-base-100 shadow border border-base-300 rounded-2xl">
+            <div className="card-body p-6 sm:p-8 space-y-5">
+              <div>
+                <h2 className="font-black text-xl">Submit Your Application</h2>
+                <p className="text-base-content/50 text-sm mt-1">Tell us why you'd like to become a librarian — be genuine and specific.</p>
+              </div>
+
+              {/* Applying as */}
+              <div className="flex items-center gap-3 p-3 bg-base-200 rounded-xl border border-base-300">
+                <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
+                  <img
+                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || "U")}&background=random&size=36`}
+                    alt="you" className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">{user?.displayName || "User"}</p>
+                  <p className="text-xs text-base-content/50">{user?.email}</p>
+                </div>
+                <span className="ml-auto badge badge-sm badge-success">Applying</span>
+              </div>
+
+              {/* Textarea */}
+              <div className="form-control">
+                <label className="label py-0 mb-2">
+                  <span className="label-text font-semibold">Your Reason <span className="text-error">*</span></span>
+                  <span className={`label-text-alt font-medium ${charCount < 10 ? "text-error" : "text-success"}`}>
+                    {charCount} / 10 min
+                  </span>
+                </label>
+                <textarea
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="E.g. I have 5 years of experience managing a local bookstore and want to bring that expertise to BookCourier…"
+                  rows={6}
+                  className="textarea textarea-bordered w-full rounded-xl resize-none focus:textarea-primary"
+                />
+                <label className="label py-0 mt-1">
+                  <span className="label-text-alt text-base-content/40">Admins read this carefully. Be honest and specific about your motivation and background.</span>
+                </label>
+              </div>
+
+              <button
+                onClick={handleRequest}
+                disabled={loading || charCount < 10}
+                className="btn btn-primary rounded-full px-8 gap-2 w-full sm:w-auto"
+              >
+                {loading
+                  ? <><span className="loading loading-spinner loading-xs"></span> Submitting…</>
+                  : "🎓 Submit Application"
+                }
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Benefits */}
+        <div className="card bg-primary/5 border border-primary/20 shadow rounded-2xl">
+          <div className="card-body p-6 sm:p-8">
+            <h2 className="font-black text-xl mb-4 text-center">Why Join as a Librarian?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+              {[
+                { icon: "📚", title: "Full Inventory Control", desc: "Add, edit, publish or unpublish books anytime." },
+                { icon: "📦", title: "Manage Orders",          desc: "Track and update order statuses for your books." },
+                { icon: "📈", title: "Grow Your Library",      desc: "Build your personal digital library and reach readers." },
+              ].map(b => (
+                <div key={b.title} className="space-y-2">
+                  <span className="text-4xl">{b.icon}</span>
+                  <h3 className="font-black text-sm">{b.title}</h3>
+                  <p className="text-xs text-base-content/60">{b.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

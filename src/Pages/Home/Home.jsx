@@ -1,11 +1,10 @@
-// src/Components/Home/Home.jsx
 import { useEffect, useState } from "react";
 import HeroBanner from "../../Components/Home/HeroBanner";
 import LatestBooks from "../../Components/Home/LatestBooks";
 import CoverageMap from "../../Components/Home/CoverageMap";
 import WhyChoose from "../../Components/Home/WhyChoose";
 import CTA from "../../Components/Home/CTA";
-import axios from "axios";
+import api from "../../utilitys/api";
 import HowItWorks from "../../Components/Home/HowItWorks";
 import TrustedBy from "../../Components/Home/TrustedBy";
 
@@ -16,28 +15,23 @@ const Home = () => {
   useEffect(() => {
     const fetchLatestBooks = async () => {
       try {
-        const res = await axios.get("http://localhost:5020/books");
-        const books = res.data;
-
-        // Sort by MongoDB _id (newest first — _id contains timestamp)
-        const sortedBooks = books.sort((a, b) => 
+        // ✅ Fixed: use relative path via api instance, not hardcoded localhost
+        const res = await api.get("/books");
+        const sorted = res.data.sort((a, b) =>
           b._id.toString().localeCompare(a._id.toString())
         );
-
-        // Take latest 6
-        setLatestBooks(sortedBooks.slice(0, 6));
-        setLoading(false);
+        setLatestBooks(sorted.slice(0, 6));
       } catch (err) {
         console.error("Failed to fetch books:", err);
+      } finally {
         setLoading(false);
       }
     };
-
     fetchLatestBooks();
   }, []);
 
   return (
-    <div className="bg-base-300 text-base-content min-h-screen">
+    <div className="bg-base-100 text-base-content min-h-screen">
       <HeroBanner />
 
       {loading ? (
@@ -48,10 +42,10 @@ const Home = () => {
         <LatestBooks latestBooks={latestBooks} />
       )}
 
-      <CoverageMap />
       <WhyChoose />
-      <HowItWorks/>
-      <TrustedBy/>
+      <HowItWorks />
+      <CoverageMap />
+      <TrustedBy />
       <CTA />
     </div>
   );

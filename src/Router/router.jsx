@@ -12,6 +12,10 @@ import Invoices from "../Components/UserPages/Invoices";
 import AdminDashboard from "../Pages/Admin/AdminDashBoard";
 import PrivateRoute from "../utilitys/PrivateRoute";
 import BecomeLibrarian from "../Pages/BecomeLibrarian/BecomeLibrarian";
+import AddBook from "../Pages/BecomeLibrarian/AddBook";
+import MyBooks from "../Pages/BecomeLibrarian/MyBook";
+import LibrarianDashboard from "../Pages/BecomeLibrarian/LibrarianDashboard";
+import EditBook from "../Pages/BecomeLibrarian/EditBook"; // ✅ NEW
 
 export const router = createBrowserRouter([
   {
@@ -19,67 +23,66 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <Error />,
     children: [
-      {
-        index: true,
-        element: <Home />,
-      },
-      {
-        path: "login",
-        element: <Login />,
-      },
-      {
-        path: "signup",
-        element: <SignUp />,
-      },
-      {
-        path: "books",
-        element: <AllBooks />,
-      },
-      {
-        path: "book/:id",
-        element: <BookDetails />,
-      },
+      { index: true, element: <Home /> },
+      { path: "login",    element: <Login /> },
+      { path: "signup",   element: <SignUp /> },
+      { path: "books",    element: <AllBooks /> },
+      { path: "book/:id", element: <BookDetails /> },
 
-      // ===== USER PROTECTED ROUTES =====
+      // ── Any logged-in user ──────────────────────────────────
       {
         path: "profile",
-        element: (
-          <PrivateRoute>
-            <MyProfile />
-          </PrivateRoute>
-        ),
+        element: <PrivateRoute><MyProfile /></PrivateRoute>,
       },
       {
         path: "my-orders",
-        element: (
-          <PrivateRoute>
-            <MyOrders />
-          </PrivateRoute>
-        ),
+        element: <PrivateRoute><MyOrders /></PrivateRoute>,
       },
       {
         path: "invoices",
-        element: (
-          <PrivateRoute>
-            <Invoices />
-          </PrivateRoute>
-        ),
+        element: <PrivateRoute><Invoices /></PrivateRoute>,
       },
-
+      {
+        path: "my-books",
+        element: <PrivateRoute><MyBooks /></PrivateRoute>,
+      },
       {
         path: "become-librarian",
+        element: <PrivateRoute><BecomeLibrarian /></PrivateRoute>,
+      },
+
+      // ── Librarian OR Admin ──────────────────────────────────
+      {
+        path: "add-book",
         element: (
-          <PrivateRoute>
-            <BecomeLibrarian />
+          <PrivateRoute allowedRoles={["librarian", "admin"]}>
+            <AddBook />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "librarian-dashboard",
+        element: (
+          <PrivateRoute allowedRoles={["librarian", "admin"]}>
+            <LibrarianDashboard />
+          </PrivateRoute>
+        ),
+      },
+      {
+        // ✅ NEW — edit a specific book by ID
+        path: "edit-book/:id",
+        element: (
+          <PrivateRoute allowedRoles={["librarian", "admin"]}>
+            <EditBook />
           </PrivateRoute>
         ),
       },
 
-      // ===== ADMIN PROTECTED ROUTE =====
+      // ── Admin only ──────────────────────────────────────────
       {
         path: "admin-dashboard",
         element: (
-          <PrivateRoute requiredRole="admin">
+          <PrivateRoute allowedRoles={["admin"]}>
             <AdminDashboard />
           </PrivateRoute>
         ),
