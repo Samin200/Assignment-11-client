@@ -3,7 +3,7 @@ import axios from "axios";
 import { getAuth } from "firebase/auth";
 
 const api = axios.create({
-  baseURL: "http://localhost:5020", // Change to your production URL later (e.g. https://your-backend.com)
+  baseURL: "http://programing-hero-assignment-11-serve.vercel.app", // Change to your production URL later (e.g. https://your-backend.com)
   timeout: 10000,
 });
 

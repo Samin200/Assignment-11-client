@@ -35,7 +35,7 @@ const MyBooks = () => {
   const fetchBooks = async () => {
     try {
       const res = await api.get(
-        `http://localhost:5020/books?addedBy=${user.email}`,
+        `http://programing-hero-assignment-11-serve.vercel.app/books?addedBy=${user.email}`,
       );
       setBooks(res.data);
       setLoading(false);
@@ -58,7 +58,9 @@ const MyBooks = () => {
     if (!confirm.isConfirmed) return;
 
     try {
-      await api.delete(`http://localhost:5020/books/${id}?email=${user.email}`);
+      await api.delete(
+        `http://programing-hero-assignment-11-serve.vercel.app/books/${id}?email=${user.email}`,
+      );
 
       setBooks(books.filter((book) => book._id !== id));
 
@@ -71,7 +73,7 @@ const MyBooks = () => {
   const handleSaveEdit = async () => {
     try {
       await api.patch(
-        `http://localhost:5020/books/${editingBook._id}?email=${user.email}`,
+        `http://programing-hero-assignment-11-serve.vercel.app/books/${editingBook._id}?email=${user.email}`,
         {
           bookName: editingBook.bookName,
           authorName: editingBook.authorName,
