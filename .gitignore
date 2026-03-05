@@ -61,3 +61,4 @@ coverage/
 # Ignore all files in public/ that shouldn't be committed (if any)
 public/*.map
 public/*.json  # except manifest.json or robots.txt if needed
+.vercel
