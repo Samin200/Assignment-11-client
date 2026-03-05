@@ -112,12 +112,13 @@ export default function Navbar() {
   );
 
   return (
-    <div className="navbar bg-base-100 border-b-2 border-primary px-4 sticky top-0 z-50 shadow-sm">
+    <div className="navbar bg-base-100 border-b-2 border-primary px-2 sm:px-4 sticky top-0 z-50 shadow-sm">
 
-      {/* Brand + Mobile Hamburger */}
+      {/* ── navbar-start: hamburger + brand ── */}
       <div className="navbar-start">
-        <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn btn-ghost btn-sm lg:hidden">
+        {/* Hamburger — mobile only */}
+        <div className="dropdown lg:hidden">
+          <div tabIndex={0} role="button" className="btn btn-ghost btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
             </svg>
@@ -126,25 +127,27 @@ export default function Navbar() {
             {navbarLinks}
           </ul>
         </div>
-        <Link to="/" className="btn btn-ghost text-xl font-extrabold text-primary tracking-tight ml-1">
+
+        <Link to="/" className="btn btn-ghost text-lg sm:text-xl font-extrabold text-primary tracking-tight">
           BookCourier
         </Link>
       </div>
 
-      {/* Desktop Nav */}
+      {/* ── navbar-center: desktop links only ── */}
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal gap-1 px-1">
           {navbarLinks}
         </ul>
       </div>
 
-      {/* Right side */}
-      <div className="navbar-end gap-3">
-        {/* Dark mode toggle */}
+      {/* ── navbar-end: theme + avatar/login (ALL screen sizes) ── */}
+      <div className="navbar-end gap-1 sm:gap-2">
+
+        {/* ✅ Theme toggle — always visible */}
         <label className="toggle text-base-content">
           <input type="checkbox" checked={isDarkMode} onChange={toggleTheme}
             className="theme-controller" value={isDarkMode ? "dark" : "bumblebee"} />
-          <svg aria-label="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <svg aria-label="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 sm:w-5 sm:h-5">
             <g strokeLinejoin="round" strokeLinecap="round" strokeWidth="2" fill="none" stroke="currentColor">
               <circle cx="12" cy="12" r="4"/>
               <path d="M12 2v2"/><path d="M12 20v2"/>
@@ -153,25 +156,23 @@ export default function Navbar() {
               <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
             </g>
           </svg>
-          <svg aria-label="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <svg aria-label="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 sm:w-5 sm:h-5">
             <g strokeLinejoin="round" strokeLinecap="round" strokeWidth="2" fill="none" stroke="currentColor">
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
             </g>
           </svg>
         </label>
 
-        {/* Avatar dropdown OR Login */}
+        {/* ✅ Avatar OR Login+Signup — always visible */}
         {user ? (
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button"
               className="btn btn-ghost btn-circle avatar ring-2 ring-primary ring-offset-2 ring-offset-base-100 hover:ring-offset-0 transition-all duration-200">
-              <div className="w-10 rounded-full">
+              <div className="w-8 sm:w-10 rounded-full">
                 <img alt="avatar" src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || "U")}&background=random&size=40`} />
               </div>
             </div>
-
             <ul tabIndex="-1" className="menu menu-sm dropdown-content bg-base-100 rounded-2xl z-50 mt-3 w-56 p-2 border border-base-200 shadow-xl">
-              {/* User info header */}
               <li className="px-3 py-3 border-b border-base-200 mb-2 pointer-events-none">
                 <div>
                   <p className="font-bold text-sm truncate">{user.displayName || "User"}</p>
@@ -183,9 +184,10 @@ export default function Navbar() {
             </ul>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <Link to="/login"  className="btn btn-ghost btn-sm rounded-full px-4">Login</Link>
-            <Link to="/signup" className="btn btn-primary btn-sm rounded-full px-5">Sign Up</Link>
+          /* ✅ Login + Sign Up — always visible, compact on mobile */
+          <div className="flex gap-1 sm:gap-2">
+            <Link to="/login"  className="btn btn-ghost btn-xs sm:btn-sm rounded-full px-2 sm:px-4">Login</Link>
+            <Link to="/signup" className="btn btn-primary btn-xs sm:btn-sm rounded-full px-2 sm:px-5">Sign Up</Link>
           </div>
         )}
       </div>
