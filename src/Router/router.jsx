@@ -9,7 +9,7 @@ import BookDetails from "../Components/Shared/BookDetails";
 import MyProfile from "../Components/UserPages/MyProfile";
 import MyOrders from "../Components/UserPages/MyOrders";
 import Invoices from "../Components/UserPages/Invoices";
-import AdminDashboard from "../Pages/Admin/AdminDashBoard";
+import AdminDashboard from "../Pages/Admin/AdminDashboard";  // ✅ lowercase d
 import PrivateRoute from "../utilitys/PrivateRoute";
 import BecomeLibrarian from "../Pages/BecomeLibrarian/BecomeLibrarian";
 import AddBook from "../Pages/BecomeLibrarian/AddBook";
