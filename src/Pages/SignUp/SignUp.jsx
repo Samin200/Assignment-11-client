@@ -124,9 +124,9 @@ const SignUp = () => {
                   <img
                     src={previewUrl || `https://ui-avatars.com/api/?name=U&background=random&size=48`}
                     alt="preview"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-base-300"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-base-300 shrink-0"
                   />
-                  <label className="btn btn-outline btn-sm rounded-full gap-2 cursor-pointer w-full text-sm">
+                  <label className="btn btn-outline btn-sm rounded-full gap-2 cursor-pointer">
                     {previewUrl ? "📷 Change Photo" : "📷 Upload Photo"}
                     <input 
                       type="file" 
