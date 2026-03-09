@@ -15,12 +15,40 @@ export default function BookDetails() {
   const [phone, setPhone]         = useState("");
   const [address, setAddress]     = useState("");
   const [placing, setPlacing]     = useState(false);
+  const [addingWishlist, setAddingWishlist] = useState(false);
+
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [canReview, setCanReview] = useState(false);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
-    api.get(`/books/${id}`)
-      .then(res => { setBook(res.data); setLoading(false); })
+    // Fetch book details and reviews
+    Promise.all([
+      api.get(`/books/${id}`),
+      api.get(`/reviews/${id}`).catch(() => ({ data: [] }))
+    ])
+      .then(([bookRes, reviewsRes]) => {
+        setBook(bookRes.data);
+        setReviews(reviewsRes.data);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    // Check if user has ordered this book
+    if (user?.email && id) {
+      api.get(`/orders?email=${user.email}`)
+        .then(res => {
+          const hasOrdered = res.data.some(order => order.bookId === id);
+          setCanReview(hasOrdered);
+        })
+        .catch(err => console.error("Failed to check orders", err));
+    }
+  }, [user, id]);
 
   const handleOrder = async () => {
     if (!phone.trim() || !address.trim()) {
@@ -62,6 +90,71 @@ export default function BookDetails() {
       Swal.fire({ icon: "error", title: "Order Failed", text: err.response?.data?.error || "Something went wrong." });
     } finally {
       setPlacing(false);
+    }
+  };
+
+  const handleWishlist = async () => {
+    if (!user) {
+      return Swal.fire({
+        title: "Login Required",
+        text: "You need to log in to add items to your wishlist.",
+        icon: "warning",
+        confirmButtonText: "Go to Login",
+        showCancelButton: true,
+      }).then(r => { if (r.isConfirmed) navigate("/login"); });
+    }
+
+    setAddingWishlist(true);
+    try {
+      await api.post("/wishlists", {
+        userId:       user.email,
+        bookId:       book._id,
+        bookName:     book.bookName,
+        bookImage:    book.bookImage,
+        price:        book.price,
+        addedAt:      new Date(),
+      });
+      Swal.fire({
+        icon: "success",
+        title: "Added to Wishlist! ❤️",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "Failed to Add", text: err.response?.data?.error || "Something went wrong." });
+    } finally {
+      setAddingWishlist(false);
+    }
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    if (!reviewText.trim()) return;
+
+    setSubmittingReview(true);
+    try {
+      const res = await api.post("/reviews", {
+        bookId: id,
+        userName: user.displayName || "User",
+        userImage: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || "U"}`,
+        rating: reviewRating,
+        comment: reviewText.trim(),
+        date: new Date()
+      });
+      // Optionally re-fetch reviews or optimistic update
+      setReviews([...reviews, res.data.review || { ...res.data }]);
+      setReviewText("");
+      setReviewRating(5);
+      Swal.fire({
+        icon: "success",
+        title: "Review Submitted",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "Failed to Add Review", text: err.response?.data?.error || "Error adding review" });
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -219,6 +312,15 @@ export default function BookDetails() {
                 >
                   ← Browse More
                 </Link>
+
+                <button
+                  onClick={handleWishlist}
+                  disabled={addingWishlist}
+                  className="btn btn-outline btn-lg btn-secondary rounded-full hover:-translate-y-0.5 transition-all duration-200 ml-auto"
+                  title="Add to Wishlist"
+                >
+                  {addingWishlist ? <span className="loading loading-spinner loading-xs"></span> : "❤️ Wishlist"}
+                </button>
               </div>
 
               {book.addedBy && (
@@ -226,6 +328,79 @@ export default function BookDetails() {
                   Listed by <span className="font-medium">{book.addedBy}</span>
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* ── Reviews Section ── */}
+          <div className="mt-16 border-t border-base-300 pt-10">
+            <h2 className="text-3xl font-black mb-6">Reviews & Ratings</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* Reviews List */}
+              <div className="space-y-6">
+                {reviews.length === 0 ? (
+                  <p className="text-base-content/50 italic">No reviews yet for this book.</p>
+                ) : (
+                  reviews.map((rev, idx) => (
+                    <div key={idx} className="bg-base-100 p-5 rounded-2xl border border-base-200 flex gap-4 shadow-sm">
+                      <img src={rev.userImage || "https://ui-avatars.com/api/?name=U"} alt={rev.userName} className="w-12 h-12 rounded-full ring-1 ring-primary/20" />
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-bold">{rev.userName}</h4>
+                          <span className="text-sm text-base-content/40">{new Date(rev.date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="mb-2"><Stars rating={rev.rating} /></div>
+                        <p className="text-base-content/80 text-sm">{rev.comment}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Review Form */}
+              <div>
+                {canReview ? (
+                  <div className="bg-base-100 p-6 rounded-3xl border border-base-200 shadow-xl">
+                    <h3 className="text-xl font-bold mb-4">Write a Review</h3>
+                    <form onSubmit={submitReview} className="space-y-4">
+                      <div>
+                        <label className="label py-0 mb-1"><span className="label-text font-semibold">Rating</span></label>
+                        <div className="rating rating-lg">
+                          {[1, 2, 3, 4, 5].map(val => (
+                            <input
+                              key={val}
+                              type="radio"
+                              name="rating"
+                              className="mask mask-star-2 bg-yellow-400"
+                              checked={reviewRating === val}
+                              onChange={() => setReviewRating(val)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="label py-0 mb-1"><span className="label-text font-semibold">Your Review</span></label>
+                        <textarea
+                          placeholder="What did you think about this book?"
+                          value={reviewText}
+                          onChange={(e) => setReviewText(e.target.value)}
+                          className="textarea textarea-bordered w-full h-32 resize-none rounded-xl"
+                          required
+                        ></textarea>
+                      </div>
+                      <button type="submit" className="btn btn-primary w-full rounded-xl" disabled={submittingReview}>
+                        {submittingReview ? <span className="loading loading-spinner loading-xs"></span> : "Submit Review"}
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="bg-primary/5 p-6 rounded-3xl border border-primary/20 flex flex-col items-center justify-center text-center h-48">
+                    <p className="text-4xl mb-2">🔒</p>
+                    <p className="font-semibold text-primary">Reviews are exclusively for buyers</p>
+                    <p className="text-sm text-base-content/60 mt-1">Purchase this book to leave a review.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

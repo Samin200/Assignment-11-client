@@ -5,6 +5,7 @@ import { updateProfile } from "firebase/auth";
 import { auth } from "../../Firebase/firebase.init";
 import Swal from "sweetalert2";
 import api from "../../utilitys/api";
+import { PieChart, Pie, Cell, Tooltip as RTTooltip, Legend as RTLegend, ResponsiveContainer } from "recharts";
 
 const MyProfile = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -13,6 +14,7 @@ const MyProfile = () => {
   const [previewUrl, setPreviewUrl] = useState(user?.photoURL || "");
   const [loading, setLoading]     = useState(false);
   const [stats, setStats]         = useState({ orders: 0, paid: 0, books: 0 });
+  const [userOrders, setUserOrders] = useState([]);
 
   // ── Load quick stats ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -23,6 +25,7 @@ const MyProfile = () => {
           api.get(`/orders?email=${user.email}`),
         ]);
         const orders = ordersRes.data || [];
+        setUserOrders(orders);
         setStats({
           orders: orders.length,
           paid:   orders.filter(o => o.paymentStatus === "paid").length,
@@ -250,6 +253,47 @@ const MyProfile = () => {
                 </div>
               </div>
             </div>
+
+            {/* Orders Chart */}
+            {userOrders.length > 0 && (
+              <div className="card bg-base-100 shadow border border-base-300 rounded-2xl">
+                <div className="card-body p-5">
+                  <h2 className="font-black text-sm text-base-content/50 uppercase tracking-wide mb-3">Order Status Overview</h2>
+                  <div className="h-64 mt-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={Object.entries(
+                            userOrders.reduce((acc, order) => {
+                              acc[order.status] = (acc[order.status] || 0) + 1;
+                              return acc;
+                            }, {})
+                          ).map(([name, value]) => ({ name, value }))}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {Object.keys(
+                            userOrders.reduce((acc, order) => {
+                              acc[order.status] = (acc[order.status] || 0) + 1;
+                              return acc;
+                            }, {})
+                          ).map((status, index) => {
+                            const colors = { pending: "#fbbd23", shipped: "#3abff8", delivered: "#36d399", cancelled: "#f87272" };
+                            return <Cell key={`cell-${index}`} fill={colors[status] || "#8884d8"} />;
+                          })}
+                        </Pie>
+                        <RTTooltip />
+                        <RTLegend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

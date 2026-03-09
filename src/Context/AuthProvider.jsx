@@ -52,17 +52,18 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   // ── CREATE USER (email/password) ────────────────────────────────────────────
-  const createUser = async (email, password, firstName, lastName) => {
+  const createUser = async (email, password, firstName, lastName, photoURL = null) => {
     setLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
 
       await updateProfile(result.user, {
         displayName: `${firstName} ${lastName}`.trim(),
+        ...(photoURL && { photoURL })
       });
 
       // Sync to backend — onAuthStateChanged will also fire but we set here too
-      const enhancedUser = await syncUser({ ...result.user, displayName: `${firstName} ${lastName}`.trim() });
+      const enhancedUser = await syncUser({ ...result.user, displayName: `${firstName} ${lastName}`.trim(), photoURL });
       setUser(enhancedUser);
       return enhancedUser;
     } catch (err) {

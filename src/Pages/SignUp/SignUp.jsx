@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate, useLocation } from "react-router";
 import Swal from "sweetalert2";
 import { AuthContext } from "../../Context/AuthContext";
+import api from "../../utilitys/api";
 
 const SignUp = () => {
   const { createUser, loginWithGoogle } = useContext(AuthContext);
@@ -10,6 +11,8 @@ const SignUp = () => {
   const location  = useLocation();
   const [showPw, setShowPw]   = useState(false);
   const [showCp, setShowCp]   = useState(false);
+  const [image, setImage]     = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm();
   const password = watch("password", "");
@@ -31,8 +34,23 @@ const SignUp = () => {
 
   const onSubmit = async (data) => {
     try {
-      // ✅ createUser already handles backend sync — no need for a separate api.post("/users")
-      await createUser(data.email, data.password, data.firstName, data.lastName);
+      let photoURL = null;
+
+      if (image) {
+        // Upload image to ImgBB backend wrapper
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(image);
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.onerror = reject;
+        });
+        
+        const uploadRes = await api.post("/api/upload-image", { image: base64 });
+        photoURL = uploadRes.data.url;
+      }
+
+      // ✅ createUser already handles backend sync
+      await createUser(data.email, data.password, data.firstName, data.lastName, photoURL);
 
       Swal.fire({ icon: "success", title: "Account Created!", timer: 1500, showConfirmButton: false });
       navigate(from, { replace: true });
@@ -99,6 +117,33 @@ const SignUp = () => {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* Profile Image row */}
+              <div className="form-control">
+                <label className="label py-0 mb-1"><span className="label-text font-semibold text-sm">Profile Picture <span className="text-base-content/40 font-normal">(optional)</span></span></label>
+                <div className="flex items-center gap-4">
+                  <img
+                    src={previewUrl || `https://ui-avatars.com/api/?name=U&background=random&size=48`}
+                    alt="preview"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-base-300"
+                  />
+                  <label className="btn btn-outline btn-sm rounded-full gap-2 cursor-pointer w-full text-sm">
+                    {previewUrl ? "📷 Change Photo" : "📷 Upload Photo"}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setImage(file);
+                          setPreviewUrl(URL.createObjectURL(file));
+                        }
+                      }} 
+                    />
+                  </label>
+                </div>
+              </div>
+
               {/* Name row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="form-control">

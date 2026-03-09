@@ -72,6 +72,7 @@ export default function Navbar() {
     <>
       <li><NavLink to="/profile"   className={dropLinkClass}>👤 Profile</NavLink></li>
       <li><NavLink to="/my-orders" className={dropLinkClass}>📦 My Orders</NavLink></li>
+      <li><NavLink to="/my-wishlist" className={dropLinkClass}>❤️ My Wishlist</NavLink></li>
       <li><NavLink to="/invoices"  className={dropLinkClass}>🧾 Invoices</NavLink></li>
 
       {user?.role === "user" && (

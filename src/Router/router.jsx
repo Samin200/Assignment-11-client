@@ -12,6 +12,7 @@ import Invoices from "../Components/UserPages/Invoices";
 import AdminDashboard from "../Pages/Admin/AdminDashboard";  // ✅ lowercase d
 import PrivateRoute from "../utilitys/PrivateRoute";
 import BecomeLibrarian from "../Pages/BecomeLibrarian/BecomeLibrarian";
+import MyWishlist from "../Components/UserPages/MyWishlist";
 import AddBook from "../Pages/BecomeLibrarian/AddBook";
 import MyBooks from "../Pages/BecomeLibrarian/MyBook";
 import LibrarianDashboard from "../Pages/BecomeLibrarian/LibrarianDashboard";
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
       {
         path: "my-books",
         element: <PrivateRoute><MyBooks /></PrivateRoute>,
+      },
+      {
+        path: "my-wishlist",
+        element: <PrivateRoute><MyWishlist /></PrivateRoute>,
       },
       {
         path: "become-librarian",

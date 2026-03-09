@@ -3,6 +3,7 @@ import api from "../../utilitys/api";
 import { AuthContext } from "../../Context/AuthContext";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTTooltip, Legend as RTLegend, ResponsiveContainer, LineChart, Line } from "recharts";
 
 const StatCard = ({ icon, label, value, color }) => (
   <div className={`card bg-base-100 shadow border-l-4 ${color}`}>
@@ -31,7 +32,7 @@ const AdminDashboard = () => {
   const [librarianRequests, setLibrarianRequests] = useState([]);
   const [loading, setLoading]                     = useState(true);
   const [actionLoading, setActionLoading]         = useState({});
-  const [activeTab, setActiveTab]                 = useState("users");
+  const [activeTab, setActiveTab]                 = useState("overview");
   const [expandedReason, setExpandedReason]       = useState(null);
   const [userSearch, setUserSearch]               = useState("");
   const [bookSearch, setBookSearch]               = useState("");
@@ -48,10 +49,11 @@ const AdminDashboard = () => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const [usersRes, booksRes, requestsRes] = await Promise.all([
+      const [usersRes, booksRes, requestsRes, ordersRes] = await Promise.all([
         api.get("/api/users"),
         api.get("/books"),
         api.get("/api/librarian-requests"),
+        api.get("/orders").catch(() => ({ data: [] }))
       ]);
       setUsers((usersRes.data || []).map(u => ({
         ...u,
@@ -59,6 +61,8 @@ const AdminDashboard = () => {
       })));
       setBooks(booksRes.data || []);
       setLibrarianRequests(requestsRes.data || []);
+      // Optional state for orders if needed for more complex logic, but we can compute inline or store it
+      window.__adminOrders = ordersRes.data || [];
     } catch (err) {
       Swal.fire("Error", err.response?.data?.error || "Failed to load data", "error");
     } finally {
@@ -185,6 +189,19 @@ const AdminDashboard = () => {
     b.authorName?.toLowerCase().includes(bookSearch.toLowerCase())
   );
 
+  // Chart data prep
+  const categoryData = Object.entries(books.reduce((acc, b) => {
+    const cat = b.category || "Uncategorized";
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {})).map(([name, count]) => ({ name, count }));
+
+  const ordersData = Object.entries((window.__adminOrders || []).reduce((acc, o) => {
+    const d = new Date(o.orderDate || new Date()).toLocaleDateString();
+    acc[d] = (acc[d] || 0) + 1;
+    return acc;
+  }, {})).map(([date, count]) => ({ date, count })).sort((a,b) => new Date(a.date) - new Date(b.date));
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-200">
@@ -227,6 +244,7 @@ const AdminDashboard = () => {
         {/* Tabs */}
         <div className="tabs tabs-boxed w-fit flex-wrap gap-1">
           {[
+            { id: "overview", label: "📊 Overview" },
             { id: "users",    label: `👥 Users (${users.length})`                },
             { id: "requests", label: `📝 Requests (${librarianRequests.length})`, badge: pendingRequests },
             { id: "books",    label: `📚 Books (${books.length})`                },
@@ -245,6 +263,46 @@ const AdminDashboard = () => {
             </button>
           ))}
         </div>
+
+        {/* ══ OVERVIEW TAB ══ */}
+        {activeTab === "overview" && (
+          <section className="space-y-6">
+            <h2 className="text-2xl font-black">Dashboard Overview</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Bar Chart: Books by Category */}
+              <div className="bg-base-100 p-6 rounded-3xl border border-base-200 shadow-xl">
+                <h3 className="font-bold mb-4 text-base-content/70 uppercase text-sm tracking-widest">Books by Category</h3>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={categoryData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="name" tick={{fontSize: 12}} />
+                      <YAxis allowDecimals={false} />
+                      <RTTooltip cursor={{fill: 'transparent'}} contentStyle={{borderRadius: '12px'}} />
+                      <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Line Chart: Orders over time */}
+              <div className="bg-base-100 p-6 rounded-3xl border border-base-200 shadow-xl">
+                <h3 className="font-bold mb-4 text-base-content/70 uppercase text-sm tracking-widest">Orders Over Time</h3>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={ordersData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="date" tick={{fontSize: 12}} />
+                      <YAxis allowDecimals={false} />
+                      <RTTooltip contentStyle={{borderRadius: '12px'}} />
+                      <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={3} dot={{r: 4}} activeDot={{r: 6}} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ══ USERS TAB ══ */}
         {activeTab === "users" && (
