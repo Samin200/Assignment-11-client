@@ -36,8 +36,13 @@ export default function MyOrders() {
 
     const params = new URLSearchParams(window.location.search);
     const paymentParam = params.get("payment");
+    const sessionId = params.get("session_id");
 
     if (paymentParam === "success") {
+      if (sessionId) {
+        // Fallback checks the stripe session directly and updates DB if webhook was missed
+        api.post("/api/verify-payment", { sessionId }).then(() => fetchOrders()).catch(console.error);
+      }
       Swal.fire({ icon: "success", title: "Payment Successful! 🎉", text: "Your order is now completed.", timer: 4000, toast: true, position: "top-end" });
       window.history.replaceState({}, "", "/my-orders");
       const iv = setInterval(fetchOrders, 2000);
