@@ -142,7 +142,7 @@ export default function Navbar() {
       </div>
 
       {/* ── navbar-end: theme + avatar/login (ALL screen sizes) ── */}
-      <div className="navbar-end gap-1 sm:gap-2">
+      <div className="navbar-end gap-4 sm:gap-6">
 
         {/* ✅ Theme toggle — always visible */}
         <label className="toggle text-base-content">
