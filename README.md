@@ -6,8 +6,8 @@ This project was built as part of Programming Hero Assignment-11.
 
 ## Live Demo
 
-- **Frontend**: [https://your-vercel-link.vercel.app](https://your-vercel-link.vercel.app)  
-- **Backend API**: [https://your-backend-link.onrender.com](https://your-backend-link.onrender.com) (or wherever you deployed)
+- **Frontend**: [https://assignment-11-client-yhwt.vercel.app/](https://assignment-11-client-yhwt.vercel.app/)  
+- **Backend API**: [https://vercel.com/samin200s-projects/assignment-11-client-yhwt/deployments](https://vercel.com/samin200s-projects/assignment-11-client-yhwt/deployments) (or wherever you deployed)
 
 ## Key Features
 
