@@ -7,7 +7,7 @@ This project was built as part of Programming Hero Assignment-11.
 ## Live Demo
 
 - **Frontend**: [https://assignment-11-client-yhwt.vercel.app/](https://assignment-11-client-yhwt.vercel.app/)  
-- **Backend API**: [https://vercel.com/samin200s-projects/assignment-11-client-yhwt/deployments](https://vercel.com/samin200s-projects/assignment-11-client-yhwt/deployments) (or wherever you deployed)
+- **Backend API**: [https://assignment-11-server-git-main-samin200s-projects.vercel.app/](https://assignment-11-server-git-main-samin200s-projects.vercel.app/)
 
 ## Key Features
 
